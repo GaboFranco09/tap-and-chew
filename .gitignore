@@ -1,0 +1,31 @@
+# Python (Django / Flask)
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
+*.egg-info/
+
+# Node.js (Express / Gateway)
+node_modules/
+.env
+dist/
+*.log
+
+# PHP (Laravel)
+vendor/
+.env
+storage/logs/
+bootstrap/cache/
+
+# Bases de datos
+*.sqlite
+*.sqlite3
+
+# Docker
+.docker/
+
+# IDEs
+.vscode/
+.idea/
+*.DS_Store
