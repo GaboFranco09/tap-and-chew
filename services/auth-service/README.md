@@ -1,59 +1,118 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Auth Service — tap&Chew
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Microservicio de autenticación y gestión de identidad del sistema tap&Chew.
+Construido con **Laravel 11** + **MySQL**.
 
-## About Laravel
+## Responsabilidad
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Gestiona el ciclo de vida completo de la identidad:
+registro, autenticación, sesiones y recuperación de contraseña.
+Todos los demás microservicios dependen de los tokens que este servicio emite.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Stack
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+| Componente     | Tecnología              |
+|----------------|-------------------------|
+| Framework      | Laravel 11              |
+| Autenticación  | Laravel Sanctum (tokens)|
+| Base de datos  | MySQL 8                 |
+| Puerto         | 8001                    |
 
-## Learning Laravel
+## Endpoints
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+| Método | Ruta                        | Auth | Descripción                        |
+|--------|-----------------------------|------|------------------------------------|
+| POST   | /api/auth/register          | No   | Registrar nuevo usuario            |
+| POST   | /api/auth/login             | No   | Iniciar sesión, retorna token      |
+| POST   | /api/auth/logout            | Sí   | Revocar token actual               |
+| GET    | /api/auth/me                | Sí   | Datos del usuario autenticado      |
+| POST   | /api/auth/forgot-password   | No   | Enviar enlace de recuperación      |
+| POST   | /api/auth/reset-password    | No   | Resetear contraseña con token      |
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Roles disponibles
 
-## Laravel Sponsors
+| Rol       | Descripción                              |
+|-----------|------------------------------------------|
+| admin     | Acceso total al sistema                  |
+| cashier   | Gestión de pagos y cierre de pedidos     |
+| kitchen   | Visualización y gestión de cola cocina   |
+| customer  | Realiza pedidos desde el kiosko          |
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## Instalación local
+```bash
+cd services/auth-service
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+php artisan serve --port=8001
+```
 
-### Premium Partners
+## Base de datos
+```
+Nombre:    tapandchew_auth
+Motor:     MySQL 8
+Tablas:    users, password_reset_tokens,
+           sessions, personal_access_tokens
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## Ejemplos de uso
 
-## Contributing
+**Registro:**
+```json
+POST /api/auth/register
+{
+  "name": "Gabriel Admin",
+  "email": "admin@tapandchew.com",
+  "password": "password123",
+  "password_confirmation": "password123",
+  "role": "admin"
+}
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+**Login:**
+```json
+POST /api/auth/login
+{
+  "email": "admin@tapandchew.com",
+  "password": "password123"
+}
+```
 
-## Code of Conduct
+**Respuesta login:**
+```json
+{
+  "message": "Login exitoso.",
+  "user": {
+    "id": 1,
+    "name": "Gabriel Admin",
+    "email": "admin@tapandchew.com",
+    "role": "admin"
+  },
+  "token": "1|abc123..."
+}
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+**Endpoints protegidos** requieren header:
+```
+Authorization: Bearer {token}
+```
 
-## Security Vulnerabilities
+## Variables de entorno requeridas
+```env
+APP_NAME=TapAndChew-Auth
+APP_URL=http://localhost:8001
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=tapandchew_auth
+DB_USERNAME=root
+DB_PASSWORD=
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Notas de diseño
 
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- Cada login revoca todos los tokens anteriores del usuario — una sesión activa por usuario.
+- El campo `is_active` permite deshabilitar usuarios sin eliminarlos.
+- Las contraseñas se hashean automáticamente con bcrypt via Laravel.
+- En producción configurar SMTP en `.env` para recuperación de contraseña.
