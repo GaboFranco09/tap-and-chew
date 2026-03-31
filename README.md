@@ -17,7 +17,7 @@ Sistema basado en microservicios con API Gateway centralizado.
 | API Gateway      | Express   | —             | 8000   | Pendiente|
 | Auth Service     | Laravel   | MySQL         | 8001   | Listo    |
 | Menu Service     | Django    | PostgreSQL    | 8002   | Listo    |
-| Order Service    | Express   | Firebase      | 8003   | Pendiente|
+| Order Service    | Express   | Firebase      | 8003   | Listo    |
 | Kitchen Service  | Flask     | MySQL         | 8004   | Pendiente|
 | Payment Service  | Express   | MongoDB       | 8005   | Pendiente|
 
