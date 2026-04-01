@@ -18,7 +18,7 @@ Sistema basado en microservicios con API Gateway centralizado.
 | Auth Service     | Laravel   | MySQL         | 8001   | Listo    |
 | Menu Service     | Django    | PostgreSQL    | 8002   | Listo    |
 | Order Service    | Express   | Firebase      | 8003   | Listo    |
-| Kitchen Service  | Flask     | MySQL         | 8004   | Pendiente|
+| Kitchen Service  | Flask     | MySQL         | 8004   | Listo    |
 | Payment Service  | Express   | MongoDB       | 8005   | Pendiente|
 
 ## Entrega #1 — Implementación inicial
