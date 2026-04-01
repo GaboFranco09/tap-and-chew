@@ -19,19 +19,19 @@ Sistema basado en microservicios con API Gateway centralizado.
 | Menu Service     | Django    | PostgreSQL    | 8002   | Listo    |
 | Order Service    | Express   | Firebase      | 8003   | Listo    |
 | Kitchen Service  | Flask     | MySQL         | 8004   | Listo    |
-| Payment Service  | Express   | MongoDB       | 8005   | Pendiente|
+| Payment Service  | Express   | MongoDB       | 8005   | Listo    |
 
 ## Entrega #1 — Implementación inicial
 
 **Fecha:** 4 de abril de 2026
 
 - [x] Auth Service — Laravel + MySQL
-- [ ] Menu Service — Django + PostgreSQL
-- [ ] Order Service — Express + Firebase
-- [ ] Kitchen Service — Flask + MySQL
-- [ ] Payment Service — Express + MongoDB
+- [x] Menu Service — Django + PostgreSQL
+- [x] Order Service — Express + Firebase
+- [x] Kitchen Service — Flask + MySQL
+- [x] Payment Service — Express + MongoDB
 - [ ] API Gateway — Express
-- [ ] Diagrama de arquitectura
+- [x] Diagrama de arquitectura
 - [ ] Documentación de endpoints
 
 ## Levantar el sistema (desarrollo local)
@@ -39,10 +39,10 @@ Sistema basado en microservicios con API Gateway centralizado.
 Instrucciones por servicio en sus respectivos README:
 
 - [Auth Service](services/auth-service/README.md)
-- Menu Service — próximamente
-- Order Service — próximamente
-- Kitchen Service — próximamente
-- Payment Service — próximamente
+- [Menu Service](services/menu-service/README.md)
+- [Order Service](services/order-service/README.md)
+- [Kitchen Service](services/kitchen-service/README.md)
+- [Payment Service](services/payment-service/README.md)
 
 ## Repositorio
 
