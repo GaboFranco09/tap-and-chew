@@ -12,6 +12,9 @@ node_modules/
 dist/
 *.log
 
+# Firebase credentials
+firebase-credentials.json
+
 # PHP (Laravel)
 vendor/
 .env
