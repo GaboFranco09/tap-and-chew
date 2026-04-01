@@ -1,0 +1,71 @@
+[
+  {
+    "model": "menu.category",
+    "pk": 1,
+    "fields": {
+      "name": "Burgers",
+      "description": "Hamburguesas clásicas y especiales",
+      "image_url": "",
+      "is_active": true,
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "menu.category",
+    "pk": 2,
+    "fields": {
+      "name": "Bebidas",
+      "description": "Refrescos, jugos y más",
+      "image_url": "",
+      "is_active": true,
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "menu.product",
+    "pk": 1,
+    "fields": {
+      "category": 1,
+      "name": "Classic Burger",
+      "description": "Carne de res, lechuga, tomate y salsa especial",
+      "price": "12500.00",
+      "image_url": "",
+      "is_active": true,
+      "is_available": true,
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "menu.product",
+    "pk": 2,
+    "fields": {
+      "category": 1,
+      "name": "BBQ Burger",
+      "description": "Carne de res, tocineta y salsa BBQ",
+      "price": "14500.00",
+      "image_url": "",
+      "is_active": true,
+      "is_available": true,
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "menu.product",
+    "pk": 3,
+    "fields": {
+      "category": 2,
+      "name": "Coca-Cola",
+      "description": "Gaseosa 350ml",
+      "price": "4500.00",
+      "image_url": "",
+      "is_active": true,
+      "is_available": true,
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  }
+]
