@@ -32,7 +32,7 @@ Sistema basado en microservicios con API Gateway centralizado.
 - [x] Payment Service — Express + MongoDB
 - [X] API Gateway — Express
 - [x] Diagrama de arquitectura
-- [ ] Documentación de endpoints
+- [X] Documentación de endpoints
 
 ## Levantar el sistema (desarrollo local)
 
