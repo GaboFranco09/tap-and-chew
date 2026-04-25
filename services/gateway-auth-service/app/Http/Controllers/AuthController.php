@@ -4,133 +4,150 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Validator;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
 {
-    // POST /api/auth/register
-    public function register(Request $request): JsonResponse
+    // ─── REGISTER ────────────────────────────────────────────────
+
+    public function register(Request $request)
     {
-        $validated = $request->validate([
-            'name'     => 'required|string|max:100',
-            'email'    => 'required|email|unique:users,email',
+        $validator = Validator::make($request->all(), [
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users',
             'password' => 'required|string|min:8|confirmed',
             'role'     => 'sometimes|in:admin,cashier,kitchen,customer',
         ]);
 
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
         $user = User::create([
-            'name'     => $validated['name'],
-            'email'    => $validated['email'],
-            'password' => $validated['password'],
-            'role'     => $validated['role'] ?? 'customer',
+            'name'     => $request->name,
+            'email'    => $request->email,
+            'password' => Hash::make($request->password),
+            'role'     => $request->role ?? 'customer',
         ]);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $token = JWTAuth::fromUser($user);
 
         return response()->json([
-            'message' => 'Usuario registrado correctamente.',
-            'user'    => $user,
+            'message' => 'Registro exitoso.',
+            'user'    => $this->userResponse($user),
             'token'   => $token,
         ], 201);
     }
 
-    // POST /api/auth/login
-    public function login(Request $request): JsonResponse
+    // ─── LOGIN ───────────────────────────────────────────────────
+
+    public function login(Request $request)
     {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'email'    => 'required|email',
             'password' => 'required|string',
         ]);
 
-        if (!Auth::attempt($request->only('email', 'password'))) {
-            return response()->json([
-                'message' => 'Credenciales incorrectas.',
-            ], 401);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
         }
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user->is_active) {
-            return response()->json([
-                'message' => 'Usuario inactivo. Contacta al administrador.',
-            ], 403);
+        if (! $user || ! Hash::check($request->password, $user->password)) {
+            return response()->json(['message' => 'Credenciales inválidas.'], 401);
         }
 
-        // Revocar tokens anteriores y crear uno nuevo
-        $user->tokens()->delete();
-        $token = $user->createToken('auth_token')->plainTextToken;
+        if (! $user->is_active) {
+            return response()->json(['message' => 'Cuenta desactivada.'], 403);
+        }
+
+        $token = JWTAuth::fromUser($user);
 
         return response()->json([
             'message' => 'Login exitoso.',
-            'user'    => $user,
+            'user'    => $this->userResponse($user),
             'token'   => $token,
         ]);
     }
 
-    // POST /api/auth/logout
-    public function logout(Request $request): JsonResponse
-    {
-        $request->user()->currentAccessToken()->delete();
+    // ─── LOGOUT ──────────────────────────────────────────────────
 
-        return response()->json([
-            'message' => 'Sesión cerrada correctamente.',
-        ]);
+    public function logout()
+    {
+        JWTAuth::invalidate(JWTAuth::getToken());
+
+        return response()->json(['message' => 'Sesión cerrada exitosamente.']);
     }
 
-    // GET /api/auth/me
-    public function me(Request $request): JsonResponse
+    // ─── ME ──────────────────────────────────────────────────────
+
+    public function me()
     {
-        return response()->json($request->user());
+        $user = JWTAuth::parseToken()->authenticate();
+
+        return response()->json($this->userResponse($user));
     }
 
-    // POST /api/auth/forgot-password
-    public function forgotPassword(Request $request): JsonResponse
+    // ─── FORGOT PASSWORD ─────────────────────────────────────────
+
+    public function forgotPassword(Request $request)
     {
-        $request->validate([
-            'email' => ['required', 'email'],
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
         ]);
 
-        $status = Password::sendResetLink($request->only('email'));
-
-        if ($status !== Password::RESET_LINK_SENT) {
-            return response()->json([
-                'message' => 'No se pudo enviar el enlace. Intenta de nuevo.',
-            ], 400);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        Password::sendResetLink($request->only('email'));
+
         return response()->json([
-            'message' => 'Enlace de recuperación enviado a tu correo.',
+            'message' => 'Si el correo existe, recibirás un enlace de recuperación.',
         ]);
     }
 
-    // POST /api/auth/reset-password
-    public function resetPassword(Request $request): JsonResponse
+    // ─── RESET PASSWORD ──────────────────────────────────────────
+
+    public function resetPassword(Request $request)
     {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'token'    => 'required',
             'email'    => 'required|email',
             'password' => 'required|string|min:8|confirmed',
         ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function (User $user, string $password) {
-                $user->forceFill(['password' => $password])->save();
-                $user->tokens()->delete();
+                $user->forceFill(['password' => Hash::make($password)])->save();
             }
         );
 
         if ($status !== Password::PASSWORD_RESET) {
-            return response()->json([
-                'message' => 'Token inválido o expirado.',
-            ], 400);
+            return response()->json(['message' => 'Token inválido o expirado.'], 400);
         }
 
-        return response()->json([
-            'message' => 'Contraseña actualizada correctamente.',
-        ]);
+        return response()->json(['message' => 'Contraseña restablecida exitosamente.']);
+    }
+
+    // ─── HELPER ──────────────────────────────────────────────────
+
+    private function userResponse(User $user): array
+    {
+        return [
+            'id'    => $user->id,
+            'name'  => $user->name,
+            'email' => $user->email,
+            'role'  => $user->role,
+        ];
     }
 }

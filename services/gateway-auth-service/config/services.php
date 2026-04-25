@@ -35,4 +35,20 @@ return [
         ],
     ],
 
+    'menu' => [
+        'url' => env('MS_MENU_URL', 'http://127.0.0.1:8002'),
+    ],
+    'order' => [
+        'url' => env('MS_ORDER_URL', 'http://127.0.0.1:8003'),
+    ],
+    'kitchen' => [
+        'url' => env('MS_KITCHEN_URL', 'http://127.0.0.1:8004'),
+    ],
+    'payment' => [
+        'url' => env('MS_PAYMENT_URL', 'http://127.0.0.1:8005'),
+    ],
+    'notifications' => [
+        'url' => env('MS_NOTIFICATIONS_URL', 'http://127.0.0.1:8006'),
+    ],
+
 ];
