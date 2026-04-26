@@ -1,13 +1,14 @@
-const express      = require('express')
-const router       = express.Router()
-const controller   = require('../controllers/orderController')
-const validateOrder = require('../middlewares/validateOrder')
+const router       = require('express').Router();
+const internalAuth = require('../middlewares/internalAuth');
+const ctrl         = require('../controllers/orderController');
 
-router.get('/status/pending',  controller.getPendingOrders)
-router.get('/',                controller.getAllOrders)
-router.get('/:id',             controller.getOrderById)
-router.post('/',   validateOrder, controller.createOrder)
-router.patch('/:id/status',    controller.updateOrderStatus)
-router.delete('/:id',          controller.cancelOrder)
+router.use(internalAuth);
 
-module.exports = router
+router.get  ('/status/pending', ctrl.getPendingOrders);
+router.get  ('/',               ctrl.getOrders);
+router.post ('/',               ctrl.createOrder);
+router.get  ('/:id',            ctrl.getOrderById);
+router.patch('/:id/status',     ctrl.updateStatus);
+router.delete('/:id',           ctrl.cancelOrder);
+
+module.exports = router;
