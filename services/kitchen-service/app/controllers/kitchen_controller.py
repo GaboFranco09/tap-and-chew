@@ -1,12 +1,12 @@
 from flask import request, jsonify
 from app import db
 from app.models.kitchen_order import KitchenOrder, KitchenItem
-from app.config.firebase import get_db
+from app.config.order_client import get_pending_orders, update_order_status
 from datetime import datetime
 
 
 def get_queue():
-    """GET /api/kitchen/queue — todos los pedidos activos en cocina"""
+    """GET /api/kitchen/queue — pedidos activos en cocina."""
     orders = KitchenOrder.query.filter(
         KitchenOrder.status.in_(['received', 'preparing'])
     ).order_by(KitchenOrder.received_at.asc()).all()
@@ -14,8 +14,52 @@ def get_queue():
     return jsonify([o.to_dict() for o in orders])
 
 
+def sync_queue():
+    """POST /api/kitchen/sync — sincroniza cola desde Order Service."""
+    try:
+        pending = get_pending_orders()
+    except Exception as e:
+        return jsonify({'message': f'Error al consultar Order Service: {str(e)}'}), 503
+
+    synced = 0
+    for order_data in pending:
+        order_id = str(order_data.get('_id') or order_data.get('id', ''))
+        if not order_id:
+            continue
+
+        existing = KitchenOrder.query.filter_by(order_id=order_id).first()
+        if existing:
+            continue
+
+        order = KitchenOrder(
+            order_id   = order_id,
+            kiosk_id   = order_data.get('kiosk_id', ''),
+            notes      = order_data.get('notes', ''),
+            total      = order_data.get('total', 0),
+            status     = 'received',
+        )
+
+        for item in order_data.get('items', []):
+            order.items.append(KitchenItem(
+                product_id = item.get('product_id', ''),
+                name       = item.get('name', ''),
+                quantity   = item.get('quantity', 1),
+                unit_price = item.get('unit_price', 0),
+            ))
+
+        db.session.add(order)
+        synced += 1
+
+    db.session.commit()
+
+    return jsonify({
+        'message': f'{synced} pedidos sincronizados desde Order Service.',
+        'synced':  synced,
+    })
+
+
 def receive_order():
-    """POST /api/kitchen/orders — recibir pedido desde Order Service"""
+    """POST /api/kitchen/orders — recibir pedido directamente."""
     data = request.get_json()
 
     required = ['order_id', 'kiosk_id', 'items', 'total']
@@ -23,7 +67,6 @@ def receive_order():
         if field not in data:
             return jsonify({'message': f'{field} es requerido.'}), 400
 
-    # Verificar que no existe ya
     existing = KitchenOrder.query.filter_by(order_id=data['order_id']).first()
     if existing:
         return jsonify({'message': 'El pedido ya fue recibido.'}), 409
@@ -66,15 +109,11 @@ def start_order(order_id):
     order.started_at = datetime.utcnow()
     db.session.commit()
 
-    # Actualizar estado en Firebase también
+    # Sincronizar con Order Service
     try:
-        firebase_db = get_db()
-        firebase_db.reference(f'orders/{order_id}').update({
-            'status':     'preparing',
-            'updated_at': int(datetime.utcnow().timestamp() * 1000)
-        })
+        update_order_status(order_id, 'preparing')
     except Exception as e:
-        print(f'Firebase update error: {e}')
+        print(f'Order Service sync error: {e}')
 
     return jsonify({'message': 'Preparación iniciada.', 'order': order.to_dict()})
 
@@ -96,15 +135,11 @@ def complete_order(order_id):
 
     db.session.commit()
 
-    # Actualizar estado en Firebase
+    # Sincronizar con Order Service
     try:
-        firebase_db = get_db()
-        firebase_db.reference(f'orders/{order_id}').update({
-            'status':     'ready',
-            'updated_at': int(datetime.utcnow().timestamp() * 1000)
-        })
+        update_order_status(order_id, 'ready')
     except Exception as e:
-        print(f'Firebase update error: {e}')
+        print(f'Order Service sync error: {e}')
 
     return jsonify({'message': 'Pedido listo para entregar.', 'order': order.to_dict()})
 
@@ -126,12 +161,12 @@ def toggle_item(order_id, item_id):
     return jsonify({
         'message':  'Ítem actualizado.',
         'item_id':  item_id,
-        'is_ready': item.is_ready
+        'is_ready': item.is_ready,
     })
 
 
 def get_history():
-    """GET /api/kitchen/history — pedidos completados"""
+    """GET /api/kitchen/history — pedidos completados."""
     orders = KitchenOrder.query.filter_by(
         status='ready'
     ).order_by(KitchenOrder.completed_at.desc()).limit(50).all()
