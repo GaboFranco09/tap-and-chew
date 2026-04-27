@@ -7,26 +7,8 @@ y la cocina lo recibe en tiempo real.
 ## Arquitectura
 
 Sistema basado en microservicios con Gateway+Auth centralizado en Laravel.
-Cliente (Kiosko)
 
-        │
-        ▼
-┌──────────────────────────────────────────────
-│        Gateway + Auth Service               |                
-│   Laravel 11 + JWT — Puerto 8000            | 
-│   🔐 Único punto de entrada del sistema    |
-└───────────────┬─────────────────────────────┘ 
-                │
-        X-Internal-Secret
-                │
-    ┌───────────┼───────────┬───────────┬───────────┬
-    ▼           ▼           ▼           ▼           ▼
-┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────────────┐
-│ Menu   │ │ Orders │ │ Kitchen│ │ Payment│ │ Notifications  │
-│ :8002  │ │ :8003  │ │ :8004  │ │ :8005  │ │ :8006          │
-│ Django │ │ Express│ │ Flask  │ │ Express│ │ Express        │
-│ Postgre│ │ MongoDB│ │ MySQL  │ │ MongoDB│ │ MongoDB        │
-└────────┘ └────────┘ └────────┘ └────────┘ └────────────────┘
+![Arquitectura](docs/architecture.svg)
 
 **Regla arquitectónica:** ningún microservicio acepta peticiones sin
 el header `X-Internal-Secret`. Todo tráfico pasa por el Gateway.
