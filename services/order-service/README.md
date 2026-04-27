@@ -1,109 +1,110 @@
 # Order Service — tap&Chew
 
 Microservicio de gestión de pedidos del sistema tap&Chew.
-Construido con **Express** + **Firebase Realtime Database**.
+Construido con **Express** + **Mongoose** + **MongoDB**.
 
 ## Responsabilidad
 
 Gestiona el ciclo de vida completo de un pedido: desde que el cliente
-lo confirma en el kiosko hasta que es entregado. Al usar Firebase Realtime
-Database, cualquier cambio de estado es visible instantáneamente en la
-pantalla de cocina sin necesidad de recargar.
+lo confirma en el kiosko hasta que es entregado. Persiste los pedidos
+en MongoDB y expone el estado actualizado para que el Kitchen Service
+lo consulte vía HTTP.
 
 ## Stack
 
-| Componente     | Tecnología                      |
-|----------------|---------------------------------|
-| Framework      | Express 4                       |
-| Base de datos  | Firebase Realtime Database      |
-| Puerto         | 8003                            |
+| Componente     | Tecnología              |
+|----------------|-------------------------|
+| Framework      | Express 4               |
+| ORM            | Mongoose                |
+| Base de datos  | MongoDB                 |
+| Puerto         | 8003                    |
 
 ## Endpoints
 
-| Método | Ruta                          | Descripción                              |
-|--------|-------------------------------|------------------------------------------|
-| GET    | /health                       | Estado del servicio                      |
-| POST   | /api/orders                   | Crear nuevo pedido                       |
-| GET    | /api/orders                   | Listar todos los pedidos                 |
-| GET    | /api/orders?status={status}   | Filtrar pedidos por estado               |
-| GET    | /api/orders/status/pending    | Pedidos pendientes (pantalla de cocina)  |
-| GET    | /api/orders/:id               | Detalle de un pedido                     |
-| PATCH  | /api/orders/:id/status        | Actualizar estado del pedido             |
-| DELETE | /api/orders/:id               | Cancelar pedido (cambio de estado)       |
+| Método | Ruta                        | Descripción                        |
+|--------|-----------------------------|------------------------------------|
+| GET    | /health                     | Estado del servicio                |
+| GET    | /api/orders                 | Listar pedidos (filtro por status) |
+| GET    | /api/orders/status/pending  | Pedidos pending y confirmed        |
+| GET    | /api/orders/:id             | Detalle de un pedido               |
+| POST   | /api/orders                 | Crear nuevo pedido                 |
+| PATCH  | /api/orders/:id/status      | Actualizar estado                  |
+| DELETE /api/orders/:id             | Cancelar pedido           |
 
 ## Estados de un pedido
-```
 pending → confirmed → preparing → ready → delivered
-                                        ↘ cancelled
-```
+↘ cancelled
 
-| Estado     | Descripción                                        |
-|------------|----------------------------------------------------|
-| pending    | Pedido creado, esperando confirmación              |
-| confirmed  | Confirmado, enviado a cocina                       |
-| preparing  | Cocina está preparando el pedido                   |
-| ready      | Listo para entregar al cliente                     |
-| delivered  | Entregado                                          |
-| cancelled  | Cancelado (no se puede cancelar si está preparing) |
+| Estado     | Descripción                                          |
+|------------|------------------------------------------------------|
+| pending    | Pedido creado, esperando confirmación                |
+| confirmed  | Confirmado, enviado a cocina                         |
+| preparing  | Cocina está preparando                               |
+| ready      | Listo para entregar                                  |
+| delivered  | Entregado al cliente                                 |
+| cancelled  | Cancelado — no aplica si está preparing/ready/delivered |
 
-## Estructura del pedido en Firebase
-```json
-{
-  "orders": {
-    "{uuid}": {
-      "id": "uuid-generado",
-      "kiosk_id": "kiosk-01",
-      "items": [
-        {
-          "product_id": "1",
-          "name": "Classic Burger",
-          "quantity": 2,
-          "unit_price": 12500
-        }
-      ],
-      "notes": "Sin cebolla",
-      "status": "pending",
-      "total": 25000,
-      "created_at": 1234567890,
-      "updated_at": 1234567890
-    }
-  }
-}
-```
+## Modelos
+
+**Order** — pedido completo.
+_id         ObjectId PK
+kiosk_id    String
+items       Array (product_id, name, quantity, unit_price)
+notes       String
+status      Enum
+total       Number
+createdAt   Date
+updatedAt   Date
 
 ## Instalación local
+
 ```bash
 cd services/order-service
 npm install
 cp .env.example .env
-# Agregar firebase-credentials.json en src/config/
 npm run dev
 ```
 
+## Base de datos
+Motor:      MongoDB
+Puerto:     27017
+Colección:  orders
+
 ## Variables de entorno requeridas
+
 ```env
 PORT=8003
-FIREBASE_DATABASE_URL=https://tap-and-chew-default-rtdb.firebaseio.com
-FIREBASE_CREDENTIALS_PATH=./src/config/firebase-credentials.json
+NODE_ENV=development
+MONGO_URI=mongodb://127.0.0.1:27017/tapandchew_orders
+INTERNAL_SECRET=
 ```
 
-## Credenciales Firebase
+## Ejemplos de uso
 
-El archivo `firebase-credentials.json` no se versiona en el repositorio.
-Para obtenerlo:
-```
-Firebase Console → Project Settings → Service Accounts
-→ Generate new private key
+```json
+POST /api/orders
+X-Internal-Secret: {INTERNAL_SECRET}
+{
+  "kiosk_id": "kiosk-01",
+  "items": [
+    { "product_id": "1", "name": "Classic Burger", "quantity": 2, "unit_price": 12500 }
+  ],
+  "notes": "Sin cebolla",
+  "total": 25000
+}
 ```
 
-Guardarlo en `src/config/firebase-credentials.json`.
+**Sin secret → 403:**
+```json
+{ "message": "Acceso denegado. Debe pasar por el API Gateway." }
+```
 
 ## Notas de diseño
 
-- Los pedidos no se eliminan físicamente — un DELETE cambia el estado
-  a `cancelled` para mantener historial completo.
-- Un pedido en estado `preparing` o `ready` no puede cancelarse.
-- El endpoint `/api/orders/status/pending` es el que consume
-  el Kitchen Service para mostrar la cola de cocina.
-- Los cambios en Firebase son visibles en tiempo real desde la consola
-  sin necesidad de recargar.
+- Firebase eliminado en Entrega #2 — persistencia migrada a MongoDB
+  para consistencia arquitectónica con Payment y Notifications.
+- El endpoint `/api/orders/status/pending` es consumido directamente
+  por Kitchen Service (service-to-service con X-Internal-Secret).
+- Los pedidos no se eliminan físicamente — DELETE cambia estado a
+  `cancelled` para mantener historial completo.
+- `internalAuth` middleware bloquea cualquier acceso sin el secret.
