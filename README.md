@@ -6,50 +6,119 @@ y la cocina lo recibe en tiempo real.
 
 ## Arquitectura
 
-Sistema basado en microservicios con API Gateway centralizado.
+Sistema basado en microservicios con Gateway+Auth centralizado en Laravel.
 
 ![Arquitectura](docs/architecture.svg)
 
+**Regla arquitectónica:** ningún microservicio acepta peticiones sin
+el header `X-Internal-Secret`. Todo tráfico pasa por el Gateway.
+
 ## Microservicios
 
-| Servicio         | Framework | Base de datos | Puerto | Estado     |
-|------------------|-----------|---------------|--------|------------|
-| API Gateway      | Express   | —             | 8000   | Listo    |
-| Auth Service     | Laravel   | MySQL         | 8001   | Listo    |
-| Menu Service     | Django    | PostgreSQL    | 8002   | Listo    |
-| Order Service    | Express   | Firebase      | 8003   | Listo    |
-| Kitchen Service  | Flask     | MySQL         | 8004   | Listo    |
-| Payment Service  | Express   | MongoDB       | 8005   | Listo    |
-
-## Entrega #1 — Implementación inicial
-
-**Fecha:** 4 de abril de 2026
-
-- [x] Auth Service — Laravel + MySQL
-- [x] Menu Service — Django + PostgreSQL
-- [x] Order Service — Express + Firebase
-- [x] Kitchen Service — Flask + MySQL
-- [x] Payment Service — Express + MongoDB
-- [X] API Gateway — Express
-- [x] Diagrama de arquitectura
-- [X] Documentación de endpoints
+| Servicio               | Framework     | Base de datos | Puerto | Estado  |
+|------------------------|---------------|---------------|--------|---------|
+| Gateway + Auth Service | Laravel 11    | MySQL         | 8000   | ✅ Listo |
+| Menu Service           | Django 5      | PostgreSQL    | 8002   | ✅ Listo |
+| Order Service          | Express       | MongoDB       | 8003   | ✅ Listo |
+| Kitchen Service        | Flask 3       | MySQL         | 8004   | ✅ Listo |
+| Payment Service        | Express       | MongoDB       | 8005   | ✅ Listo |
+| Notifications Service  | Express       | MongoDB       | 8006   | ✅ Listo |
 
 ## Levantar el sistema (desarrollo local)
 
-Instrucciones por servicio en sus respectivos README:
+### Requisitos previos
+- PHP 8.2+, Composer
+- Python 3.11+
+- Node.js 18+
+- MySQL 8 (Laragon)
+- PostgreSQL (Laragon)
+- MongoDB (`mongod` directo)
 
-- [Auth Service](services/auth-service/README.md)
-- [Menu Service](services/menu-service/README.md)
-- [Order Service](services/order-service/README.md)
-- [Kitchen Service](services/kitchen-service/README.md)
-- [Payment Service](services/payment-service/README.md)
+### 1. Bases de datos
+```bash
+# MySQL — Laragon
+mysql -u root -e "CREATE DATABASE tapandchew_gateway;"
+mysql -u root -e "CREATE DATABASE tapandchew_kitchen;"
+
+# PostgreSQL — Laragon
+# Crear base de datos tapandchew_menu desde pgAdmin o psql
+
+# MongoDB — automático al primer insert
+mongod
+```
+
+### 2. Levantar servicios (una terminal por servicio)
+
+```bash
+# Gateway + Auth — Terminal 1
+cd services/gateway-auth-service
+php artisan serve --port=8000
+
+# Menu Service — Terminal 2
+cd services/menu-service
+source venv/Scripts/activate
+python manage.py runserver 8002
+
+# Order Service — Terminal 3
+cd services/order-service
+npm run dev
+
+# Kitchen Service — Terminal 4
+cd services/kitchen-service
+source venv/Scripts/activate
+python run.py
+
+# Payment Service — Terminal 5
+cd services/payment-service
+npm run dev
+
+# Notifications Service — Terminal 6
+cd services/notifications-service
+npm run dev
+```
+
+### 3. Verificar que todo está activo
+
+```bash
+curl http://localhost:8000/api/health
+curl http://localhost:8002/health  # requiere X-Internal-Secret
+curl http://localhost:8003/health
+curl http://localhost:8004/health
+curl http://localhost:8005/health
+curl http://localhost:8006/health
+```
+
+## Flujo de una venta
+
+Cliente navega menú     → GET /api/menu/products (vía Gateway)
+Confirma pedido         → POST /api/orders (vía Gateway)
+Cocina sincroniza       → POST /api/kitchen/sync (vía Gateway)
+Cocina prepara          → PATCH /api/kitchen/orders/{id}/start
+Pedido listo            → PATCH /api/kitchen/orders/{id}/complete
+Pago registrado         → POST /api/payments (vía Gateway)
+Notificación generada   → POST /api/notifications (vía Gateway)
+
 
 ## Repositorio
+main          → producción / entregas
+develop       → integración
+feature/      → una rama por servicio (activas entre entregas)
 
-Cada servicio tiene su rama `feature/nombre-servicio`.
-La rama `develop` integra todos los servicios.
-`main` recibe merges al finalizar cada entrega.
+## Entregas
 
-## Entrega #1 completada
+| Entrega | Descripción                          | Estado   |
+|---------|--------------------------------------|-------------|----------|
+| #1      | Implementación inicial               | ✅ v1.0-entrega1 |
+| #2      | Dockerización + refactoring arquitectónico | 🔄 En progreso |
+| #3      | CI/CD con Jenkins                    | 25 de mayo  | ⏳ Pendiente |
 
-> Tag: `v1.0-entrega1` — rama `main`
+## Cambios arquitectónicos — Entrega #2
+
+- **Gateway unificado:** Express gateway reemplazado por Laravel 11
+  combinando Gateway + Auth en un solo servicio.
+- **Firebase eliminado:** Order Service migró de Firebase a MongoDB.
+  Kitchen Service ahora sincroniza vía HTTP con Order Service.
+- **X-Internal-Secret:** todos los microservicios validan este header
+  — acceso directo sin pasar por el Gateway retorna 403.
+- **Notifications Service:** nuevo microservicio Express + MongoDB
+  para eventos del sistema (pedido confirmado, listo, pago procesado).
