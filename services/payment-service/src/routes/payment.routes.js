@@ -1,7 +1,10 @@
-const router    = require('express').Router();
-const { body }  = require('express-validator');
-const validate  = require('../middlewares/validate');
-const ctrl      = require('../controllers/payment.controller');
+const router       = require('express').Router();
+const { body }     = require('express-validator');
+const validate     = require('../middlewares/validate');
+const internalAuth = require('../middlewares/internalAuth');
+const ctrl         = require('../controllers/payment.controller');
+
+router.use(internalAuth);
 
 const paymentRules = [
     body('order_id').notEmpty().withMessage('order_id es requerido.'),
@@ -12,11 +15,11 @@ const paymentRules = [
     body('payment_method').isIn(['cash', 'card', 'qr']).withMessage('Método de pago inválido.'),
 ];
 
-router.get ('/',                    ctrl.getAllPayments);
-router.get ('/stats',               ctrl.getStats);
-router.get ('/order/:order_id',     ctrl.getPaymentByOrder);
-router.get ('/:id',                 ctrl.getPaymentById);
-router.post('/', ...paymentRules, validate, ctrl.createPayment);
-router.patch('/:id/refund',         ctrl.refundPayment);
+router.get ('/',                ctrl.getAllPayments);
+router.get ('/stats',           ctrl.getStats);
+router.get ('/order/:order_id', ctrl.getPaymentByOrder);
+router.get ('/:id',             ctrl.getPaymentById);
+router.post('/', paymentRules, validate, ctrl.createPayment);
+router.patch('/:id/refund',     ctrl.refundPayment);
 
 module.exports = router;
