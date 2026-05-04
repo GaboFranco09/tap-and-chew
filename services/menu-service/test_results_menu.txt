@@ -1,0 +1,19 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.3, pytest-9.0.3, pluggy-1.6.0 -- C:\tap-and-chew\services\menu-service\venv\Scripts\python.exe
+cachedir: .pytest_cache
+django: version: 6.0.3, settings: core.settings (from ini)
+rootdir: C:\tap-and-chew\services\menu-service
+configfile: pytest.ini
+plugins: django-4.12.0
+collecting ... collected 8 items
+
+menu/tests.py::test_get_categories_with_secret PASSED                    [ 12%]
+menu/tests.py::test_get_categories_without_secret PASSED                 [ 25%]
+menu/tests.py::test_get_categories_wrong_secret PASSED                   [ 37%]
+menu/tests.py::test_create_category PASSED                               [ 50%]
+menu/tests.py::test_get_active_categories PASSED                         [ 62%]
+menu/tests.py::test_get_products_with_secret PASSED                      [ 75%]
+menu/tests.py::test_get_available_products PASSED                        [ 87%]
+menu/tests.py::test_get_active_combos PASSED                             [100%]
+
+============================== 8 passed in 0.68s ==============================

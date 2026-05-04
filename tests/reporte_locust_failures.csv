@@ -1,0 +1,3 @@
+Method,Name,Error,Occurrences
+POST,T03 - Login inválido,HTTPError('429 Client Error: Too Many Requests for url: T03 - Login inválido'),1
+POST,/api/auth/login,HTTPError('429 Client Error: Too Many Requests for url: /api/auth/login'),10

@@ -55,6 +55,7 @@ Route::middleware('jwt.auth')->group(function () {
 
     // Kitchen Service
     Route::prefix('kitchen')->group(function () {
+        Route::post('/sync',                              [KitchenController::class, 'sync']);
         Route::get('/queue',                              [KitchenController::class, 'getQueue']);
         Route::get('/history',                            [KitchenController::class, 'getHistory']);
         Route::post('/orders',                            [KitchenController::class, 'receiveOrder']);

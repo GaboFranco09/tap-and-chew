@@ -110,4 +110,17 @@ class KitchenController extends Controller
             return response()->json(['message' => 'Kitchen Service no disponible.'], 503);
         }
     }
+
+    public function sync()
+    {
+        try {
+            $response = Http::withHeaders($this->internalHeaders)
+                ->timeout(5)
+                ->post("{$this->baseUrl}/api/kitchen/sync");
+
+            return response()->json($response->json(), $response->status());
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Kitchen Service no disponible.'], 503);
+        }
+    }
 }

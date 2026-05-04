@@ -1,0 +1,28 @@
+
+> notifications-service@1.0.0 test
+> jest --forceExit --detectOpenHandles
+
+  console.log
+    ◇ injected env (3) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+
+      at _log (node_modules/dotenv/lib/main.js:131:11)
+
+PASS src/tests/notification.test.js
+  Health
+    √ GET /health retorna 200 (78 ms)
+  Seguridad — X-Internal-Secret
+    √ POST /api/notifications sin secret retorna 403 (30 ms)
+    √ POST /api/notifications con secret incorrecto retorna 403 (18 ms)
+  POST /api/notifications
+    √ crea notificación con datos válidos (28 ms)
+    √ retorna 400 si faltan campos requeridos (19 ms)
+  GET /api/notifications/order/:order_id
+    √ retorna notificaciones de un pedido (55 ms)
+  PATCH /api/notifications/:id/read
+    √ marca notificación como leída (49 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       7 passed, 7 total
+Snapshots:   0 total
+Time:        1.047 s, estimated 92 s
+Ran all test suites.
